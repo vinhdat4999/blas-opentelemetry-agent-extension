@@ -79,4 +79,4 @@ jobs:
           curl -X POST -H "Authorization: token ${{ secrets.PACKAGE }}" \
             -H "Content-Type: application/octet-stream" \
             --data-binary @target/blas-opentelemetry-agent-extension-${{ steps.extractVersion.outputs.serviceVersion }}-SNAPSHOT.jar \
-            "https://uploads.github.com/repos/vinhdat4999/blas-opentelemetry-agent-extension/releases/${{ env.RELEASE_ID }}/assets?name=blas-opentelemetry-agent-extension-${{ steps.extractVersion.outputs.serviceVersion }}-SNAPSHOT.jar"
+            "https://uploads.github.com/repos/vinhdat4999/blas-opentelemetry-agent-extension/releases/${{ env.RELEASE_ID }}/assets?name=blas-opentelemetry-agent-extension-${{ steps.extractVersion.outputs.serviceVersion }}.jar"
