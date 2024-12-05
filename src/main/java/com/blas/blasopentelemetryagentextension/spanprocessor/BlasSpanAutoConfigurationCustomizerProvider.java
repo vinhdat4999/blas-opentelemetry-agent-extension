@@ -17,9 +17,7 @@ public class BlasSpanAutoConfigurationCustomizerProvider implements
   }
 
   private SdkTracerProviderBuilder configureSdkTracerProvider(
-      SdkTracerProviderBuilder tracerProvider,
-      ConfigProperties config) {
-
+      SdkTracerProviderBuilder tracerProvider, ConfigProperties config) {
     return tracerProvider.addSpanProcessor(new BlasSpanProcessor());
   }
 }
