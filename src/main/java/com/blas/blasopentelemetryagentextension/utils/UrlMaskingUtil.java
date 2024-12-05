@@ -1,8 +1,10 @@
 package com.blas.blasopentelemetryagentextension.utils;
 
 import static com.blas.blascommon.utils.StringUtils.AMPERSAND;
+import static com.blas.blascommon.utils.StringUtils.ASTERISK;
 import static com.blas.blascommon.utils.StringUtils.COMMA;
 import static com.blas.blascommon.utils.StringUtils.EQUAL;
+import static com.blas.blasopentelemetryagentextension.constant.EnvironmentVariable.OTEL_INSTRUMENTATION_BLAS_MASKED_PATTERNS;
 import static com.blas.blasopentelemetryagentextension.constant.EnvironmentVariable.OTEL_INSTRUMENTATION_BLAS_MASKED_TAGS;
 import static java.util.Arrays.asList;
 
@@ -20,20 +22,37 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class UrlMaskingUtil {
 
-  private static final List<String> DEFAULT_SENSITIVE_KEYS = asList("apiKey", "password", "key",
-      "user", "username", "pass", "secret");
-  private static final String MASKED_VALUE = "*****";
-  private static final Pattern BOT_TOKEN_PATTERN = Pattern.compile(
-      "bot([a-zA-Z0-9_-]+):([a-zA-Z0-9_-]+)");
+  private static final List<String> DEFAULT_SENSITIVE_KEYS = asList("apiKey", "pass", "password",
+      "key", "user", "username", "secret");
+
+  private static final List<String> DEFAULT_SENSITIVE_PATTERNS = asList(
+      "https://api.telegram.org/bot([a-zA-Z0-9_-]+):([a-zA-Z0-9_-]+)");
+
   private static final Set<String> MASKED_TAGS;
+  private static final Set<Pattern> MASKED_PATTERNS;
 
   static {
+    // Initialize MASKED_TAGS
     String maskedAttribute = System.getenv(OTEL_INSTRUMENTATION_BLAS_MASKED_TAGS.name());
     List<String> maskedKeys = DEFAULT_SENSITIVE_KEYS;
     if (maskedAttribute != null) {
       maskedKeys = asList(maskedAttribute.split(COMMA));
     }
     MASKED_TAGS = new HashSet<>(maskedKeys);
+
+    // Initialize MASKED_PATTERNS
+    String maskedPatternsAttribute = System.getenv(
+        OTEL_INSTRUMENTATION_BLAS_MASKED_PATTERNS.name());
+    List<String> patterns = DEFAULT_SENSITIVE_PATTERNS;
+    if (maskedPatternsAttribute != null) {
+      patterns = asList(maskedPatternsAttribute.split(COMMA));
+    }
+
+    // Convert string patterns to compiled Pattern objects
+    MASKED_PATTERNS = new HashSet<>();
+    for (String pattern : patterns) {
+      MASKED_PATTERNS.add(Pattern.compile(pattern));
+    }
   }
 
   public static String maskUrl(String url) {
@@ -48,31 +67,37 @@ public class UrlMaskingUtil {
 
       String maskedUrl = new URI(uri.getScheme(), uri.getAuthority(), path, query,
           uri.getFragment()).toString();
-      return maskTelegramBotUrl(maskedUrl);
+      return maskSensitivePattern(maskedUrl);
     } catch (URISyntaxException exception) {
       return url;
     }
   }
 
-  private static String maskTelegramBotUrl(String url) {
-    Matcher matcher = BOT_TOKEN_PATTERN.matcher(url);
+  public static String maskSensitivePattern(String url) {
+    StringBuilder result = new StringBuilder(url);
 
-    if (matcher.find()) {
-      String maskedToken = "bot*****:*****";
-      return url.replace(matcher.group(0), maskedToken);
+    for (Pattern pattern : MASKED_PATTERNS) {
+      Matcher matcher = pattern.matcher(url);
+      while (matcher.find()) {
+        for (int groupIndex = 1; groupIndex <= matcher.groupCount(); groupIndex++) {
+          int start = matcher.start(groupIndex);
+          int end = matcher.end(groupIndex);
+          result.replace(start, end, ASTERISK.repeat(end - start));
+        }
+      }
     }
-
-    return url;
+    return result.toString();
   }
+
 
   private static String maskQueryParams(String query) {
     Map<String, String> queryParams = parseQueryParams(query);
 
-    for (String key : queryParams.keySet()) {
+    queryParams.forEach((key, value) -> {
       if (isSensitive(key)) {
-        queryParams.put(key, MASKED_VALUE);
+        queryParams.put(key, ASTERISK.repeat(value.length()));
       }
-    }
+    });
 
     return buildQueryString(queryParams);
   }

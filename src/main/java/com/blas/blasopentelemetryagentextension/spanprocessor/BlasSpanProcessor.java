@@ -10,7 +10,7 @@ import io.opentelemetry.sdk.trace.SpanProcessor;
 
 public class BlasSpanProcessor implements SpanProcessor {
 
-  public static final String HTTP_URL_ATTRIBUTE = "http.url";
+  private static final String HTTP_URL_ATTRIBUTE = "http.url";
 
   @Override
   public void onStart(Context context, ReadWriteSpan span) {
