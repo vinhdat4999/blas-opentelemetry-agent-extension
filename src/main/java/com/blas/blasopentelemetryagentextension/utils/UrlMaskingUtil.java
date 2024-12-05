@@ -36,7 +36,7 @@ public class UrlMaskingUtil {
     String maskedAttribute = System.getenv(OTEL_INSTRUMENTATION_BLAS_MASKED_TAGS.name());
     List<String> maskedKeys = DEFAULT_SENSITIVE_KEYS;
     if (maskedAttribute != null) {
-      maskedKeys = asList(maskedAttribute.split(COMMA));
+      maskedKeys.addAll(asList(maskedAttribute.split(COMMA)));
     }
     MASKED_TAGS = new HashSet<>(maskedKeys);
 
@@ -45,7 +45,7 @@ public class UrlMaskingUtil {
         OTEL_INSTRUMENTATION_BLAS_MASKED_PATTERNS.name());
     List<String> patterns = DEFAULT_SENSITIVE_PATTERNS;
     if (maskedPatternsAttribute != null) {
-      patterns = asList(maskedPatternsAttribute.split(COMMA));
+      patterns.addAll(asList(maskedPatternsAttribute.split(COMMA)));
     }
 
     // Convert string patterns to compiled Pattern objects
