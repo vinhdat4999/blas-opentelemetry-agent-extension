@@ -36,7 +36,7 @@ jobs:
           echo "serviceVersion=$serviceVersion" >> $GITHUB_OUTPUT
 
       - name: Cache Maven dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -47,13 +47,6 @@ jobs:
         env:
           GITHUB_ACTOR: ${{ env.GITHUB_ACTOR }}
           GITHUB_TOKEN: ${{ secrets.PACKAGE }}
-
-      - name: Verify JAR exists
-        run: |
-          if [ ! -f target/blas-opentelemetry-agent-extension-${{ steps.extractVersion.outputs.serviceVersion }}-SNAPSHOT.jar ]; then
-            echo "JAR file does not exist! Ensure the build step succeeded."
-            exit 1
-          fi
 
       - name: Create GitHub Release
         id: createRelease
@@ -66,7 +59,7 @@ jobs:
               "body": "Release notes for version '$VERSION'",
               "draft": false,
               "prerelease": false
-            }' https://api.github.com/repos/vinhdat4999/blas-opentelemetry-agent-extension/releases)
+            }' https://api.github.com/repos/vinhdat4999/${{ github.event.repository.name }}/releases)
 
           echo "Release response: $RESPONSE"
           RELEASE_ID=$(echo $RESPONSE | jq -r .id)
@@ -78,5 +71,5 @@ jobs:
           VERSION="${{ steps.extractVersion.outputs.serviceVersion }}"
           curl -X POST -H "Authorization: token ${{ secrets.PACKAGE }}" \
             -H "Content-Type: application/octet-stream" \
-            --data-binary @target/blas-opentelemetry-agent-extension-${{ steps.extractVersion.outputs.serviceVersion }}-SNAPSHOT.jar \
-            "https://uploads.github.com/repos/vinhdat4999/blas-opentelemetry-agent-extension/releases/${{ env.RELEASE_ID }}/assets?name=blas-opentelemetry-agent-extension-${{ steps.extractVersion.outputs.serviceVersion }}.jar"
+            --data-binary @target/${{ github.event.repository.name }}-${{ steps.extractVersion.outputs.serviceVersion }}-SNAPSHOT.jar \
+            "https://uploads.github.com/repos/vinhdat4999/${{ github.event.repository.name }}/releases/${{ env.RELEASE_ID }}/assets?name=${{ github.event.repository.name }}-${{ steps.extractVersion.outputs.serviceVersion }}.jar"
